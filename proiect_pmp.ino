@@ -3,6 +3,10 @@
 #include <LiquidCrystal_I2C.h> // libraria pt LCD
 #include <Relay.h> // libraria pt releu
 #include <AltSoftSerial.h> // libraria pt Bluetooth
+#include <DS3231.h>
+
+// initializare DS3231 
+DS3231  rtc(SDA, SCL); 
 
 
 
@@ -16,11 +20,20 @@ float t; // declararea temperaturii curente
 
 
 AltSoftSerial altSerial; // definire pt Bluetooth
-LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 16 chars and 2 line display
+LiquidCrystal_I2C lcd(0x27,20,4);  // setarea adresei LCD-ului la 0x27 pentru 20 de caractere in 4 linii de display
 DHT dht(DHTPIN, DHTTYPE); // definire pt senzor de temperatura
 
 void setup()
 {
+  //conexiunea seriala pentru RTC
+  Serial.begin(115200);
+  rtc.begin();
+  
+  // urmatoarele linii au fost utilizate pentru initializarea RTC-ului, dar acum le putem lasa comentate deoarece ceasul a fost deja setat
+  // rtc.setDOW(TUESDAY);     
+  //rtc.setTime(22, 6, 0);    
+  //rtc.setDate(22, 12, 2020);   
+  
   // setup senzor
   dht.begin();
   
@@ -38,6 +51,7 @@ void setup()
 
 }
 
+// functie pentru afisarea temperaturii curente
 void afisareTemperatura_curenta()
 {
   lcd.setCursor(2,1);
@@ -47,6 +61,7 @@ void afisareTemperatura_curenta()
   lcd.print("C ");
 }
 
+// afisarea temperaturii target
 void afisareTemperatura_target()
 {
   lcd.setCursor(2, 2);
@@ -54,6 +69,8 @@ void afisareTemperatura_target()
   lcd.print((char)223);
   lcd.print("C ");
 }
+
+// afisare stare releu, daca target_temp < t => termostat oprit, target_temp > t => termostat pornit
 void afisareReleu()  
 {
   lcd.setCursor(2,3);
@@ -75,6 +92,7 @@ void afisareReleu()
 
 void loop()
 {
+  //citirea din terminalul de pe telefon
  char c;
  if (altSerial.available()) {
    c = altSerial.read();
@@ -91,5 +109,16 @@ void loop()
   afisareTemperatura_curenta();
   afisareTemperatura_target();
   afisareReleu();
+
+  // afisare data si temperatura curenta
+  lcd.setCursor(10,0);
+  lcd.print("Data:");
+  lcd.setCursor(10,1);
+  lcd.print(rtc.getDOWStr());
+  lcd.setCursor(10,2);
+  lcd.print(rtc.getDateStr());
+  lcd.setCursor(10,3);
+  lcd.print(rtc.getTimeStr());
+  
 
 }
